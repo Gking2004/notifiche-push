@@ -1,0 +1,66 @@
+services:
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16
+    container_name: notification_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: notification_user
+      POSTGRES_PASSWORD: notification_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+  # ── Spring Boot App ───────────────────────────────────────────────────────
+  app:
+    build:
+      context: ./notification
+      dockerfile: Dockerfile
+    container_name: notification-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: notification_db
+      DB_USER: notification_user
+      DB_PASSWORD: notification_password
+      KEYCLOAK_SECRET: ${KEYCLOAK_SECRET}
+      KEYCLOAK_USERNAME: ${KEYCLOAK_USERNAME}
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./notification/src/main/resources/serviceAccountKey.json:/app/serviceAccountKey.json:ro
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.5
+    container_name: keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_USERNAME}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD}
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+    driver: local
+  keycloak_data:
+    driver: local
