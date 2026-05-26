@@ -42,7 +42,7 @@ public class AuthController {
     @Operation(summary = "Log in a user", description = "Authenticates user credentials and returns a token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Login successful", content = @Content),
-            @ApiResponse(responseCode = "404", description = "User not found", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content),
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {

@@ -5,6 +5,8 @@ import com.r2u.notification.dto.request.SignupRequest;
 import com.r2u.notification.dto.response.AuthResponse;
 import com.r2u.notification.entity.UserEntity;
 import com.r2u.notification.repository.UserRepository;
+import com.r2u.notification.exception.UserAlreadyExistsException;
+import com.r2u.notification.exception.InvalidCredentialsException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +16,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import jakarta.transaction.Transactional;
 import java.util.List;
@@ -70,6 +73,13 @@ public class AuthService {
     public AuthResponse signup(SignupRequest request) {
         log.info("Signing up user: {}", request.getUsername());
 
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new UserAlreadyExistsException("L'utente con questo username esiste già");
+        }
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new UserAlreadyExistsException("L'utente con questa email esiste già");
+        }
+
         String adminToken = getAdminToken();
 
         // Crea utente su Keycloak
@@ -86,15 +96,23 @@ public class AuthService {
             "requiredActions", List.of()
         );
 
-        webClientBuilder.build()
-            .post()
-            .uri(keycloakUrl + "/admin/realms/" + realm + "/users")
-            .header("Authorization", "Bearer " + adminToken)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(keycloakUser)
-            .retrieve()
-            .toBodilessEntity()
-            .block();
+        try {
+            webClientBuilder.build()
+                .post()
+                .uri(keycloakUrl + "/admin/realms/" + realm + "/users")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(keycloakUser)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+        } catch (WebClientResponseException e) {
+            log.error("Errore durante la creazione dell'utente su Keycloak: {}", e.getResponseBodyAsString());
+            if (e.getStatusCode().value() == 409) {
+                throw new UserAlreadyExistsException("L'utente con questo username o email esiste già su Keycloak");
+            }
+            throw new RuntimeException("Errore durante la registrazione su Keycloak: " + e.getMessage(), e);
+        }
 
         // Salva nel DB locale (senza password)
         UserEntity user = new UserEntity();
@@ -117,19 +135,26 @@ public class AuthService {
         formData.add("username", request.getUsername());
         formData.add("password", request.getPassword());
 
+        try {
+            Map response = webClientBuilder.build()
+                .post()
+                .uri(keycloakUrl + "/realms/" + realm + "/protocol/openid-connect/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
 
-        Map response = webClientBuilder.build()
-            .post()
-            .uri(keycloakUrl + "/realms/" + realm + "/protocol/openid-connect/token")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(BodyInserters.fromFormData(formData))
-            .retrieve()
-            .bodyToMono(Map.class)
-            .block();
-
-        AuthResponse authResponse = new AuthResponse();
-        authResponse.setUsername(request.getUsername());
-        authResponse.setToken((String) response.get("access_token"));
-        return authResponse;
+            AuthResponse authResponse = new AuthResponse();
+            authResponse.setUsername(request.getUsername());
+            authResponse.setToken((String) response.get("access_token"));
+            return authResponse;
+        } catch (WebClientResponseException e) {
+            log.error("Errore di login per l'utente {}: {}", request.getUsername(), e.getResponseBodyAsString());
+            if (e.getStatusCode().value() == 401 || e.getStatusCode().value() == 400) {
+                throw new InvalidCredentialsException("Credenziali non valide o utente non trovato");
+            }
+            throw new RuntimeException("Errore durante il login su Keycloak: " + e.getMessage(), e);
+        }
     }
 }
