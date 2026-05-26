@@ -1,54 +1,71 @@
 import * as React from "react"
+import keycloak from "@/components/keycloak"
 
 interface AuthContextType {
   username: string | null
   token: string | null
-  login: (username: string, token: string) => void
+  isAuthenticated: boolean
+  login: () => void
   logout: () => void
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [username, setUsername] = React.useState<string | null>(() => {
-    return localStorage.getItem("auth_username")
-  })
-  const [token, setToken] = React.useState<string | null>(() => {
-    return localStorage.getItem("auth_token")
-  })
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false)
 
-  const login = React.useCallback((newUsername: string, newToken: string) => {
-    setUsername(newUsername)
-    setToken(newToken)
-    localStorage.setItem("auth_username", newUsername)
-    localStorage.setItem("auth_token", newToken)
+  const [username, setUsername] = React.useState<string | null>(null)
+  const [token, setToken] = React.useState<string | null>(null)
+
+  const syncAuth = React.useCallback(() => {
+    const auth = keycloak.authenticated ?? false
+
+    setIsAuthenticated(auth)
+
+    if (auth) {
+      setUsername(keycloak.tokenParsed?.preferred_username ?? null)
+      setToken(keycloak.token ?? null)
+    } else {
+      setUsername(null)
+      setToken(null)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    syncAuth()
+
+    const interval = setInterval(() => {
+      syncAuth()
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [syncAuth])
+
+  const login = React.useCallback(() => {
+    keycloak.login()
   }, [])
 
   const logout = React.useCallback(() => {
-    setUsername(null)
-    setToken(null)
-    localStorage.removeItem("auth_username")
-    localStorage.removeItem("auth_token")
+    keycloak.logout()
   }, [])
 
-  const value = React.useMemo(() => ({
-    username,
-    token,
-    login,
-    logout
-  }), [username, token, login, logout])
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        username,
+        token,
+        isAuthenticated,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
 }
 
 export function useAuth() {
-  const context = React.useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
+  const ctx = React.useContext(AuthContext)
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider")
+  return ctx
 }
