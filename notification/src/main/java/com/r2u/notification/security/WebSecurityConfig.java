@@ -2,11 +2,12 @@ package com.r2u.notification.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -25,7 +26,7 @@ public class WebSecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:8081", "http://localhost:8082",
             "http://127.0.0.1:8081", "http://localhost:5173",
-            "http://127.0.0.1:5173"
+            "http://127.0.0.1:5173", "http://localhost:5173"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(
@@ -61,15 +62,19 @@ public class WebSecurityConfig {
                     "/v3/api-docs.yaml",
                     "/swagger-resources/**",
                     "/webjars/**",
-                    "/h2-console/**",
-                    "/auth/**"
+                    "/h2-console/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(Customizer.withDefaults())  // ← valida il JWT di Keycloak
-            );
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(jwtDecoder())));
 
         return http.build();
+    }
+
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder
+            .withJwkSetUri("http://keycloak:8080/realms/myrealm/protocol/openid-connect/certs")
+            .build();
     }
 }
