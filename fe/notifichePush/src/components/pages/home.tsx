@@ -3,7 +3,7 @@ import { FormNotifiche } from "../formNotifiche"
 import { Button } from "../ui/button"
 
 export function Home() {
-    const { username, isAuthenticated,token, login, logout } = useAuth()
+    const { username, isAuthenticated, login, logout } = useAuth()
 
     return (
         <div className="flex-1 flex flex-col">
