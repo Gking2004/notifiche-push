@@ -44,7 +44,7 @@ export function DatePickerWithRange({ value, onChange, label = "Seleziona un int
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0" align="start" side="bottom" avoidCollisions={false}>
           <Calendar
             mode="range"
             defaultMonth={value?.from}

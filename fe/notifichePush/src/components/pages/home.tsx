@@ -15,12 +15,12 @@ export function Home() {
                         </p>
                         <Button onClick={logout} variant="outline" className="hover:text-white hover:bg-red-600 transition" size="sm">Logout</Button>
                     </div>
-                    <div className="flex-1 flex justify-center items-center mt-16">
+                    <div className="flex-1 flex justify-center items-center">
                         <FormNotifiche />
                     </div>
                 </>
             ) : (
-                <div className="flex-1 flex justify-center items-center">
+                <div className="flex-1 flex justify-center items-center ">
                     <Button onClick={login}>Login</Button>
                 </div>
             )}
