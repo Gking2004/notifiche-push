@@ -1,5 +1,9 @@
 import * as React from "react"
 import keycloak from "@/components/keycloak"
+import { useEffect } from "react"
+import { registerDeviceWithBackend } from "@/utils/notifications"
+import { onMessage } from "firebase/messaging"
+import { messaging } from "@/config/firebase"
 
 interface AuthContextType {
   username: string | null
@@ -43,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  React.useEffect(() => {
+  useEffect(() => {
     syncAuth()
 
     const interval = setInterval(() => {
@@ -60,6 +64,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = React.useCallback(() => {
     keycloak.logout()
   }, [])
+
+  useEffect(() => {
+    // Quando il token di Keycloak e l'ID utente (sub o username) sono disponibili nel contesto
+    if (token && username) {
+      registerDeviceWithBackend(token, username);
+
+      // Ascolta le notifiche push in primo piano (Foreground)
+      const unsubscribe = onMessage(messaging, (payload) => {
+        console.log("Notifica push ricevuta:", payload);
+        if (payload.notification) {
+          alert(`[Notifica] ${payload.notification.title}: ${payload.notification.body}`);
+        }
+      });
+
+      return () => unsubscribe();
+    }
+  }, [token, username]);
 
   return (
     <AuthContext.Provider

@@ -31,41 +31,75 @@ export function FormNotifiche() {
 
 
     const handleSubmit = async () => {
-        setError("");
-        if (!startDate || !endDate) {
-            setError("Compila entrambe le date.");
-            return;
-        }
-        if (endDate <= startDate) {
-            setError("La data fine deve essere successiva alla data inizio.");
+    setError("");
+    if (!startDate || !endDate) {
+        setError("Compila entrambe le date.");
+        return;
+    }
+    if (endDate <= startDate) {
+        setError("La data fine deve essere successiva alla data inizio.");
+        return;
+    }
+
+    try {
+        // 1. Chiamata al backend per creare la notifica base (la richiesta ferie)
+        const resp = await fetch(`${BASE_URL}/api/notification/create`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json", 
+                "Authorization": `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+                type,
+                title: "Richiesta ferie",
+                body: `${firstname} ${lastname} ha richiesto le ferie dal ${startDate} al ${endDate}`,
+                payload: { startDate, endDate, username, firstname, lastname, email }
+            })
+        });
+        
+        const notificationData = await resp.json();
+        
+        if (!resp.ok) {
+            setError(notificationData.error || "Errore durante la creazione della notifica");
+            setMessage("error");
             return;
         }
 
-        try {
-            const resp = await fetch(`${BASE_URL}/api/notification/create`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                body: JSON.stringify({
-                    type,
-                    title: "Richiesta ferie",
-                    body: `${firstname} ${lastname} ha richiesto le ferie dal ${startDate} al ${endDate}`,
-                    payload: { startDate, endDate, username, firstname, lastname, email }
-                })
-            });
-            const data = await resp.json();
-            if(resp.ok){
-                console.log("data: ", data);
-                setMessage("success");
-            }else {
-                setError(data.error || "Errore generico");
-                setMessage("error");
-            }
-        } catch (error) {
-            setError("Errore nell'invio della notifica");
+        // 2. Recupero il token FCM di questo dispositivo salvato nel localStorage
+        const clientDeviceToken = localStorage.getItem("fcm_device_token");
+        if (!clientDeviceToken) {
+            setError("Dispositivo non registrato per le notifiche push.");
+            setMessage("error");
+            return;
+        }
+
+        // 3. Chiamata alla rotta di invio del tuo microservizio (createDeviceNotification)
+        const sendResp = await fetch(`${BASE_URL}/device-notifications/send`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json", 
+                "Authorization": `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+                notificationId: notificationData.id, // ID generato dallo step 1
+                deviceToken: clientDeviceToken       // Il token FCM del destinatario
+            })
+        });
+
+        if (sendResp.ok) {
+            setMessage("success");
+        } else {
+            const sendError = await sendResp.json();
+            setError(sendError.error || "Errore nell'invio della push tramite Firebase");
             setMessage("error");
         }
-    };
 
+    } catch (error) {
+        console.error("Errore nel flusso di invio:", error);
+        setError("Errore nell'invio della notifica");
+        setMessage("error");
+    }
+};
     return (
         <>
         <div
