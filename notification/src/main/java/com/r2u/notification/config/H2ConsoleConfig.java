@@ -11,7 +11,7 @@ public class H2ConsoleConfig {
     @Bean
     public ServletRegistrationBean<JakartaWebServlet> h2ConsoleServlet() {
         ServletRegistrationBean<JakartaWebServlet> registration = 
-            new ServletRegistrationBean<>(new JakartaWebServlet(), "/h2-console/*");
+                new ServletRegistrationBean<>(new JakartaWebServlet(), "/h2-console/*");
         registration.setLoadOnStartup(1);
         return registration;
     }

@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.r2u.notification.dto.mapper.DeviceNotificationMapper;
 import com.r2u.notification.dto.request.DeviceNotificationRequest;
@@ -36,36 +35,38 @@ public class DeviceNotificationService {
 
     @Transactional
     public DeviceNotificationResponse createDeviceNotification(DeviceNotificationRequest request) {
+        NotificationEntity notification = notificationRepository.findById(request.getNotificationId())
+            .orElseThrow(() -> new RuntimeException("Notifica non trovata"));
 
-    NotificationEntity notification = notificationRepository.findById(request.getNotificationId())
-        .orElseThrow(() -> new RuntimeException("Notifica non trovata"));
+        DeviceEntity device = deviceRepository.findByDeviceToken(request.getDeviceToken())
+            .orElseThrow(() -> new RuntimeException("Device non trovato"));
 
-    DeviceEntity device = deviceRepository.findByDeviceToken(request.getDeviceToken())
-    .orElseThrow(() -> new RuntimeException("Device non trovato"));
+        DeviceNotification entity = deviceNotificationMapper.toEntity(request);
+        entity.setStatus(Status.PENDING); // Imposta uno stato iniziale se non lo fa il mapper
+        deviceNotificationRepository.save(entity);
 
-    DeviceNotification entity = deviceNotificationMapper.toEntity(request);
-    deviceNotificationRepository.save(entity);
+        try {
+            Message message = Message.builder()
+                .setNotification(Notification.builder()
+                    .setTitle(notification.getTitle())
+                    .setBody(notification.getBody())
+                    .build())
+                .setToken(device.getDeviceToken())
+                .build();
 
-    try {
-        Message message = Message.builder()
-            .setNotification(Notification.builder()
-                .setTitle(notification.getTitle())
-                .setBody(notification.getBody())
-                .build())
-            .setToken(device.getDeviceToken())
-            .build();
+            FirebaseMessaging.getInstance().send(message);
+            entity.setStatus(Status.SENT);
+        } catch (Exception e) { 
+            entity.setStatus(Status.FAILED);
+            entity.setErrorMessage(e.getMessage());
+            log.error("Errore invio notifica Firebase: {}", e.getMessage());
+        }
 
-        FirebaseMessaging.getInstance().send(message);
-        entity.setStatus(Status.SENT);
         entity.setUpdatedAt(LocalDateTime.now());
-    } catch (FirebaseMessagingException e) {
-        entity.setStatus(Status.FAILED);
-        entity.setErrorMessage(e.getMessage());
-        log.error("Errore invio notifica Firebase: {}", e.getMessage());
-    }
-    deviceNotificationRepository.save(entity);
-    return deviceNotificationMapper.toResponse(entity);
-}
+        deviceNotificationRepository.save(entity); 
+        
+        return deviceNotificationMapper.toResponse(entity);
+    } 
 
     public DeviceNotificationResponse findById(Long id) {
         log.info("Finding device notification with id: {}", id);

@@ -277,3 +277,10 @@ postman/notification-api.postman_collection.json
 Per importarla: **Postman → File → Import → seleziona il file**.
 
 La variabile `{{baseUrl}}` è preimpostata a `http://localhost:8082`.
+
+
+## Risoluzione del problema di autenticazione JWT
+
+Per ricevere un token JWT lanciare il comando:
+
+curl -X POST http://localhost:PORTA/realms/NOME_REALM/protocol/openid-connect/token -d "grant_type=password&client_id=NOME_CLIENT&username=TUO_USERNAME&password=TUA_PASSWORD"
