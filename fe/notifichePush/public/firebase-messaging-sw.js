@@ -1,7 +1,7 @@
 importScripts("https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js");
 
-// Incolla qui le stesse identiche chiavi del tuo fribaseConfig (versione stringhe classiche)
+
 firebase.initializeApp({
   apiKey: "...",
   authDomain: "...",
@@ -20,7 +20,7 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: "/firebase-logo.png" // Opzionale, un'icona nella cartella public
+    icon: "/firebase-logo.png"
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

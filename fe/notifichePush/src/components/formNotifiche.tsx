@@ -2,14 +2,16 @@ import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import type { NotificationType } from "@/types/notification";
 import { useAuth } from "./context/auth";
+import { DatePickerWithRange } from "./DatePickerWhitRamge";
+import { type DateRange } from "react-day-picker";
+import { format } from "date-fns";
 
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export function FormNotifiche() {
     const [type, setType] = useState<NotificationType>("VACATION_REQUEST");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
     const [error, setError] = useState("");
     const [message, setMessage] = useState<"success" | "error" | null>(null);
     const [visible, setVisible] = useState(false);
@@ -32,12 +34,11 @@ export function FormNotifiche() {
 
     const handleSubmit = async () => {
     setError("");
+    const startDate = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : null;
+    const endDate   = dateRange?.to   ? format(dateRange.to,   "yyyy-MM-dd") : null;
+
     if (!startDate || !endDate) {
-        setError("Compila entrambe le date.");
-        return;
-    }
-    if (endDate <= startDate) {
-        setError("La data fine deve essere successiva alla data inizio.");
+        setError("Seleziona un intervallo di date.");
         return;
     }
 
@@ -157,14 +158,11 @@ export function FormNotifiche() {
 
             {type === "VACATION_REQUEST" && (
                 <div className="flex flex-col gap-3">
-                    <div>
-                        <label className="text-sm text-muted-foreground">Data inizio</label>
-                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full border rounded p-2 mt-1" />
-                    </div>
-                    <div>
-                        <label className="text-sm text-muted-foreground">Data fine</label>
-                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full border rounded p-2 mt-1" />
-                    </div>
+                    <DatePickerWithRange
+                        label="Periodo di ferie"
+                        value={dateRange}
+                        onChange={setDateRange}
+                    />
                     {error && <p className="text-sm text-red-500">{error}</p>}
                     <Button onClick={handleSubmit}>Invia notifica</Button>
                 </div>
