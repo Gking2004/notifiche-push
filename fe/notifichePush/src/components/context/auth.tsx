@@ -70,23 +70,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    // Quando il token di Keycloak e l'ID utente (sub o username) sono disponibili nel contesto
     if (token && username) {
-      registerDeviceWithBackend(token, username).then((fcm) => {
-        if (fcm) setFcmToken(fcm);
-      });
+        registerDeviceWithBackend(token, username).then((fcm) => {
+            if (fcm) setFcmToken(fcm);
+        });
 
-      // Ascolta le notifiche push in primo piano (Foreground)
-      const unsubscribe = onMessage(messaging, (payload) => {
-        console.log("Notifica push ricevuta:", payload);
-        if (payload.notification) {
-          alert(`[Notifica] ${payload.notification.title}: ${payload.notification.body}`);
-        }
-      });
+        // Ascolta le notifiche push in primo piano
+        const unsubscribe = onMessage(messaging, (payload) => {
+            console.log("Notifica push ricevuta:", payload);
+            
+            if (payload.notification) {
+                const { title, body, icon } = payload.notification;
 
-      return () => unsubscribe();
+                // Controlla se il browser supporta le notifiche e se il permesso è stato accordato
+                if ("Notification" in window && Notification.permission === "granted") {
+                    
+                    // Mostra la notifica nativa nella barra delle notifiche del dispositivo
+                    new Notification(title || "Nuova Notifica", {
+                        body: body,
+                        icon: icon || "/firebase-logo.png", // Opzionale: aggiunge un'icona alla notifica
+                    });
+                }
+            }
+        });
+        
+        return () => unsubscribe();
     }
-  }, [token, username]);
+}, [token, username]);
 
   return (
     <AuthContext.Provider
