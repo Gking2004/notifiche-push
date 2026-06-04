@@ -15,9 +15,7 @@ export function FormNotifiche() {
     const [error, setError] = useState("");
     const [message, setMessage] = useState<"success" | "error" | null>(null);
     const [visible, setVisible] = useState(false);
-
-
-    const { username,firstname,lastname,email,token } = useAuth()
+    const { username,firstname,lastname,email,token,fcmToken } = useAuth()
 
 
     useEffect(() => {
@@ -67,7 +65,7 @@ export function FormNotifiche() {
         }
 
         // 2. Recupero il token FCM di questo dispositivo salvato nel localStorage
-        const clientDeviceToken = localStorage.getItem("fcm_device_token");
+        const clientDeviceToken = fcmToken;
         if (!clientDeviceToken) {
             setError("Dispositivo non registrato per le notifiche push.");
             setMessage("error");
