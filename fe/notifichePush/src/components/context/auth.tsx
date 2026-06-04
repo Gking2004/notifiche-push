@@ -12,6 +12,7 @@ interface AuthContextType {
   email: string | null
   token: string | null
   isAuthenticated: boolean
+  fcmToken: string | null
   login: () => void
   logout: () => void
 }
@@ -26,6 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [lastname, setLastname] = React.useState<string | null>(null)
   const [email, setEmail] = React.useState<string | null>(null)
   const [token, setToken] = React.useState<string | null>(null)
+  const [fcmToken, setFcmToken] = React.useState<string | null>(null)
+
 
   const syncAuth = React.useCallback(() => {
     const auth = keycloak.authenticated ?? false
@@ -44,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLastname(null)
       setEmail(null)
       setToken(null)
+      setFcmToken(null)
     }
   }, [])
 
@@ -68,7 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Quando il token di Keycloak e l'ID utente (sub o username) sono disponibili nel contesto
     if (token && username) {
-      registerDeviceWithBackend(token, username);
+      registerDeviceWithBackend(token, username).then((fcm) => {
+        if (fcm) setFcmToken(fcm);
+      });
 
       // Ascolta le notifiche push in primo piano (Foreground)
       const unsubscribe = onMessage(messaging, (payload) => {
@@ -91,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         token,
         isAuthenticated,
+        fcmToken,
         login,
         logout,
       }}

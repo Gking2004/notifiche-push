@@ -3,7 +3,7 @@ import { getToken } from "firebase/messaging";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export const registerDeviceWithBackend = async (tokenKeycloak: string, userId: string) => {
+export const registerDeviceWithBackend = async (tokenKeycloak: string, userId: string): Promise<string | undefined> => {
   try {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
@@ -16,8 +16,6 @@ export const registerDeviceWithBackend = async (tokenKeycloak: string, userId: s
     });
 
     if (currentToken) {
-      localStorage.setItem("fcm_device_token", currentToken);
-
       await fetch(`${BASE_URL}/devices`, {
         method: "POST",
         headers: {
@@ -30,6 +28,8 @@ export const registerDeviceWithBackend = async (tokenKeycloak: string, userId: s
           platform: "WEB"
         })
       });
+      
+      return currentToken;
     }
   } catch (error) {
     console.error("Errore durante la registrazione del device:", error);

@@ -34,8 +34,8 @@ export function FormNotifiche() {
 
     const handleSubmit = async () => {
     setError("");
-    const startDate = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : null;
-    const endDate   = dateRange?.to   ? format(dateRange.to,   "yyyy-MM-dd") : null;
+    const startDate = dateRange?.from ? format(dateRange.from, "dd-MM-yyyy") : null;
+    const endDate   = dateRange?.to   ? format(dateRange.to,   "dd-MM-yyyy") : null;
 
     if (!startDate || !endDate) {
         setError("Seleziona un intervallo di date.");
