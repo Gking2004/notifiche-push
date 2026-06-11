@@ -15,6 +15,7 @@ public class DeviceNotificationResponse {
 
     private Long id;
     private Long notificationId;
+    private String deviceTokenRequest;
     private String deviceToken;
     private Status status;
     private String errorMessage;

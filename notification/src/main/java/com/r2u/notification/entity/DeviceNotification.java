@@ -33,6 +33,9 @@ public class DeviceNotification {
     private Long notificationId;
 
     @Column(nullable = false)
+    private String deviceTokenRequest;
+
+    @Column(nullable = false)
     private String deviceToken;
 
     @Column(nullable = false)

@@ -34,7 +34,7 @@ public class DeviceService {
                 existing.setUpdatedAt(LocalDateTime.now());
                 return deviceMapper.toResponse(deviceRepository.save(existing));
             })
-            .orElseGet(() -> 
+            .orElseGet(() ->
                 deviceMapper.toResponse(deviceRepository.save(deviceMapper.toEntity(deviceRequest)))
             );
     }

@@ -19,6 +19,7 @@ public class DeviceNotificationMapperImpl implements DeviceNotificationMapper {
         return new DeviceNotificationResponse(
                 deviceNotification.getId(),
                 deviceNotification.getNotificationId(),
+                deviceNotification.getDeviceTokenRequest(),
                 deviceNotification.getDeviceToken(),
                 deviceNotification.getStatus(),
                 deviceNotification.getErrorMessage(),
@@ -33,6 +34,7 @@ public class DeviceNotificationMapperImpl implements DeviceNotificationMapper {
         }
         DeviceNotification deviceNotification = new DeviceNotification();
         deviceNotification.setNotificationId(deviceNotificationRequest.getNotificationId());
+        deviceNotification.setDeviceTokenRequest(deviceNotificationRequest.getDeviceTokenRequest());
         deviceNotification.setDeviceToken(deviceNotificationRequest.getDeviceToken());
         deviceNotification.setStatus(Status.PENDING);
         return deviceNotification;

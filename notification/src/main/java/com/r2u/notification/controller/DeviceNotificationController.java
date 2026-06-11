@@ -31,7 +31,7 @@ public class DeviceNotificationController {
             @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
     })
     public ResponseEntity<?> createDeviceNotification(@RequestBody DeviceNotificationRequest deviceNotificationRequest) {
-        log.info("POST /device-notifications/send with body: {}", deviceNotificationRequest);
+        log.info("POST /device-notifications with body: {}", deviceNotificationRequest);
         return ResponseEntity.ok(deviceNotificationService.createDeviceNotification(deviceNotificationRequest));
     }
 

@@ -11,5 +11,6 @@ public class DeviceNotificationRequest {
 
     private Long notificationId;
     private String deviceToken;
+    private String deviceTokenRequest;
 
 }
